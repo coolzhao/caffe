@@ -25,7 +25,7 @@ void ReductionLayer<Dtype>::Forward_gpu(
     case ReductionParameter_ReductionOp_ASUM:
       caffe_gpu_asum(dim_, bottom_data, top_data);
       break;
-    case ReductionParameter_ReductionOp_SUMSQ:
+    case ReductionParameter_ReductionOp_SUM_OF_SQUARES:
       caffe_gpu_dot(dim_, bottom_data, bottom_data, top_data);
       break;
     default:
@@ -37,8 +37,8 @@ void ReductionLayer<Dtype>::Forward_gpu(
   }
   if (coeff_ != Dtype(1)) {
     // Reset the top_data pointer.
-    top_data = top[0]->mutable_gpu_data();
-    caffe_gpu_scal(num_, coeff_, top_data);
+    top_data = top[0]->mutable_cpu_data();
+    caffe_scal(num_, coeff_, top_data);
   }
 }
 
@@ -55,7 +55,7 @@ void ReductionLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
     break;
   // Operations that need bottom_data
   case ReductionParameter_ReductionOp_ASUM:
-  case ReductionParameter_ReductionOp_SUMSQ:
+  case ReductionParameter_ReductionOp_SUM_OF_SQUARES:
     bottom_data = bottom[0]->gpu_data();
     break;
   default:
@@ -75,14 +75,13 @@ void ReductionLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
       caffe_gpu_sign(dim_, bottom_data, bottom_diff);
       caffe_gpu_scal(dim_, bottom_coeff, bottom_diff);
       break;
-    case ReductionParameter_ReductionOp_SUMSQ:
+    case ReductionParameter_ReductionOp_SUM_OF_SQUARES:
       caffe_gpu_scale(dim_, 2 * bottom_coeff, bottom_data, bottom_diff);
       break;
     default:
       LOG(FATAL) << "Unknown reduction op: "
           << ReductionParameter_ReductionOp_Name(op_);
     }
-    bottom_data += dim_;
     bottom_diff += dim_;
     ++top_diff;
   }
